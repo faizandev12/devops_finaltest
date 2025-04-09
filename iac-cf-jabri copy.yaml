@@ -235,10 +235,11 @@ Resources:
         - ContainerName: wild-rydes-app
           ContainerPort: 80
           TargetGroupArn: !Ref TargetGroup
+
+  ### CodeBuild ###
   CodeBuildRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: WildRydesCodeBuildRole
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -247,36 +248,16 @@ Resources:
               Service: codebuild.amazonaws.com
             Action: sts:AssumeRole
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AdministratorAccess
+        - arn:aws:iam::aws:policy/AWSCodeBuildAdminAccess
 
-  PipelineRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: WildRydesPipelineRole
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: codepipeline.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AdministratorAccess
-
-        
-
-  ### CodeBuild ###
   CodeBuildProject:
     Type: AWS::CodeBuild::Project
-    DependsOn: CodeBuildRole
     Properties:
       Name: WildRydesBuild
-      ServiceRole: !GetAtt CodeBuildRole.Arn
       Source:
-        Type: CODEPIPELINE
+        Type: GITHUB
+        Location: !Sub "https://github.com/${GitHubRepo}"
         BuildSpec: buildspec.yml
-      Artifacts:
-        Type: CODEPIPELINE
       Environment:
         ComputeType: BUILD_GENERAL1_SMALL
         Image: aws/codebuild/standard:5.0
@@ -287,30 +268,34 @@ Resources:
             Value: !Ref AWS::Region
           - Name: AWS_ACCOUNT_ID
             Value: !Ref AWS::AccountId
-          - Name: DOCKERHUB_USERNAME
-            Value: !Ref DockerHubUsername
-          - Name: DOCKERHUB_PASSWORD
-            Value: !Ref DockerHubPassword
-  ArtifactStoreBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: !Sub "codepipeline-${AWS::Region}-${AWS::AccountId}"
-      VersioningConfiguration:
-        Status: Enabled
-      AccessControl: Private
+          - Name: ECR_REPO_URI
+            Value: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/wild-rydes-app"
+      ServiceRole: !GetAtt CodeBuildRole.Arn
+      Artifacts:
+        Type: CODEPIPELINE
 
   ### CodePipeline ###
+  PipelineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codepipeline.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser
+
   Pipeline:
     Type: AWS::CodePipeline::Pipeline
-    DependsOn: 
-      - CodeBuildProject
-      - PipelineRole
     Properties:
-      Name: WildRydesPipeline
       RoleArn: !GetAtt PipelineRole.Arn
       ArtifactStore:
         Type: S3
-        Location: !Ref ArtifactStoreBucket  
+        Location: !Sub "codepipeline-${AWS::Region}-${AWS::AccountId}"
       Stages:
         - Name: Source
           Actions:
@@ -319,7 +304,7 @@ Resources:
                 Category: Source
                 Owner: ThirdParty
                 Provider: GitHub
-                Version: "1"
+                Version: 1
               OutputArtifacts:
                 - Name: SourceOutput
               Configuration:
@@ -335,7 +320,7 @@ Resources:
                 Category: Build
                 Owner: AWS
                 Provider: CodeBuild
-                Version: "1"
+                Version: 1
               InputArtifacts:
                 - Name: SourceOutput
               OutputArtifacts:
@@ -350,13 +335,14 @@ Resources:
                 Category: Deploy
                 Owner: AWS
                 Provider: ECS
-                Version: "1"
+                Version: 1
               InputArtifacts:
                 - Name: BuildOutput
               Configuration:
                 ClusterName: !Ref ECSCluster
                 ServiceName: !Ref ECSService
                 FileName: imagedefinitions.json
+
   ### CloudWatch Alarm ###
   BuildFailureAlarm:
     Type: AWS::CloudWatch::Alarm
