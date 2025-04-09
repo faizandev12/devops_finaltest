@@ -11,6 +11,13 @@ Parameters:
   GitHubToken:
     Type: String
     NoEcho: true
+  DockerHubUsername:
+    Type: String
+    Default: your-dockerhub-username
+  DockerHubPassword:
+    Type: String
+    NoEcho: true
+
 
 Resources:
 
