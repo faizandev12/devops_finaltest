@@ -11,6 +11,13 @@ Parameters:
   GitHubToken:
     Type: String
     NoEcho: true
+  DockerHubUsername:
+    Type: String
+    Default: your-dockerhub-username
+  DockerHubPassword:
+    Type: String
+    NoEcho: true
+
 
 Resources:
 
@@ -378,3 +385,4 @@ Outputs:
   LoadBalancerDNS:
     Description: "URL to access the app"
     Value: !GetAtt ApplicationLoadBalancer.DNSName
+
