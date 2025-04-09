@@ -6,4 +6,4 @@ Resources:
         TaskDefinition: "<TASK_DEFINITION_PLACEHOLDER>"
         LoadBalancerInfo:
           ContainerName: "wild-rydes-container"
-          ContainerPort: 5000
+          ContainerPort: 80
