@@ -8,7 +8,7 @@ ip_address = socket.gethostbyname(hostname)
 
 @app.route('/')
 def hello_cloud():
-    return 'Hello Cloud Jabri!'
+    return 'Welcome to Jabri Final Test API Server'
   
 @app.route('/host')
 def host_name():
