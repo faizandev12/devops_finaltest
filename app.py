@@ -1,12 +1,23 @@
 from flask import Flask
-import os
+import socket
+import os  # Added for port configuration
 
 app = Flask(__name__)
+hostname = socket.gethostname()
+ip_address = socket.gethostbyname(hostname)
 
 @app.route('/')
-def hello_world():
-    return 'Welcome to Wild Rydes on ECS Fargate! by Jabri'
+def hello_cloud():
+    return 'Hello Cloud Jabri!'
+  
+@app.route('/host')
+def host_name():
+    return hostname
+
+@app.route('/ip')
+def host_ip():
+    return ip_address
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 80))
+    port = int(os.environ.get('PORT', 80))  # Use port 80 by default
     app.run(host='0.0.0.0', port=port)
