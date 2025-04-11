@@ -19,5 +19,5 @@ def host_ip():
     return ip_address
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 8080))  # Use port 80 by default
+    port = int(os.environ.get('PORT', 8080)) 
     app.run(host='0.0.0.0', port=port)
